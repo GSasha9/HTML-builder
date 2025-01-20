@@ -42,6 +42,7 @@ const projectDist = path.resolve(__dirname, 'project-dist');
       'utf-8',
     );
     replaceVarInTemplate();
+    compiler();
   } catch (err) {
     console.error('Error reading directory:', err.message);
   }
@@ -83,5 +84,25 @@ async function replaceVarInTemplate() {
   }
 }
 
+//function to compile styles
+const sourceDirectoryStyle = path.resolve(__dirname, 'styles');
+const destDirectoryStyle = path.resolve(__dirname, 'project-dist');
+const destFile = path.resolve(destDirectoryStyle, 'style.css');
 
-
+async function compiler() {
+  try {
+    const sourseStyles = await fsPromises.readdir(sourceDirectoryStyle, {
+      withFileTypes: true,
+    });
+    for (let file of sourseStyles) {
+      if (file.isFile()) {
+        if (file.name.split('.').pop() === 'css') {
+          const style = await readFile(path.resolve(sourceDirectoryStyle, file.name));
+          await fsPromises.appendFile(destFile, style, 'utf-8');
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Error reading directory:', err.message);
+  }
+}
