@@ -5,9 +5,11 @@ const path = require('path');
 //create project-dist folder, create index.html in it and copy assets
 const directory = path.resolve(__dirname, 'assets');
 const destDirectory = path.resolve(__dirname, 'project-dist', 'assets');
+const projectDist = path.resolve(__dirname, 'project-dist');
 
 (async function copyDir() {
   try {
+    await fsPromises.mkdir(projectDist, { recursive: true });
     await fsPromises.mkdir(destDirectory, { recursive: true });
     const destFiles = await fsPromises.readdir(destDirectory, {
       withFileTypes: true,
@@ -33,41 +35,26 @@ const destDirectory = path.resolve(__dirname, 'project-dist', 'assets');
     }
     await copyFiles(directory, destDirectory);
 
-    const template = await readTemplate();
+    const template = await readFile(path.resolve(__dirname, 'template.html'));
     await fsPromises.writeFile(
-      path.resolve(__dirname, 'project-dist', 'index.html'),
+      path.resolve(projectDist, 'index.html'),
       template,
       'utf-8',
     );
+    replaceVarInTemplate();
   } catch (err) {
     console.error('Error reading directory:', err.message);
   }
 })();
 
-function readTemplate() {
-  return new Promise((resolve, reject) => {
-    const readStream = fs.createReadStream(
-      path.resolve(__dirname, 'template.html'),
-      'utf-8',
-    );
-    let content = '';
-    readStream.on('data', (chunk) => {
-      content += chunk;
-    });
-
-    readStream.on('end', () => {
-      resolve(content);
-    });
-
-    readStream.on('error', () => {
-      reject(error.message);
-    });
-  });
+function readFile(file) {
+  return fsPromises.readFile(file, 'utf-8');
 }
 
-/*(async function replaceVarInTemplate() {
+//function to replace variables in index.html
+async function replaceVarInTemplate() {
   try {
-    const template = await readTemplate();
+    const index = await readFile(path.resolve(projectDist, 'index.html'));
     const components = await fsPromises.readdir(
       path.resolve(__dirname, 'components'),
       { withFileTypes: true },
@@ -77,25 +64,24 @@ function readTemplate() {
     for (let file of components) {
       const componentName = file.name.split('.').shift();
       const componentContent = await fsPromises.readFile(
-        path.resolve(file.path, file.name),
+        path.resolve(__dirname, 'components', file.name),
         'utf-8',
       );
       tagValues[componentName] = componentContent;
     }
-    const result = template.replace(
-      /\{\{([^}]+)\}\}/g,
-      ((_,
-      tag) => {
-        return tagValues[tag.trim()] || '';
-      }),
-    );
+    const result = index.replace(/\{\{([^}]+)\}\}/g, (_, tag) => {
+      return tagValues[tag.trim()] || '';
+    });
 
     await fsPromises.writeFile(
-      path.resolve(__dirname, 'template.html'),
+      path.resolve(projectDist, 'index.html'),
       result,
       'utf-8',
     );
   } catch (err) {
     console.log(err.message);
   }
-})(); */
+}
+
+
+
