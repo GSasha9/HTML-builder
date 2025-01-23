@@ -88,6 +88,7 @@ async function replaceVarInTemplate() {
 const sourceDirectoryStyle = path.resolve(__dirname, 'styles');
 const destDirectoryStyle = path.resolve(__dirname, 'project-dist');
 const destFile = path.resolve(destDirectoryStyle, 'style.css');
+const writeStream = fs.createWriteStream(destFile, 'utf-8');
 
 async function compiler() {
   try {
@@ -97,8 +98,10 @@ async function compiler() {
     for (let file of sourseStyles) {
       if (file.isFile()) {
         if (file.name.split('.').pop() === 'css') {
-          const style = await readFile(path.resolve(sourceDirectoryStyle, file.name));
-          await fsPromises.appendFile(destFile, style, 'utf-8');
+          const readStream = fs.createReadStream(
+            path.resolve(sourceDirectoryStyle, file.name), "utf-8"
+          );
+          readStream.pipe(writeStream, { end: false });
         }
       }
     }
